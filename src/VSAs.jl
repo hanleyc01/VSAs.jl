@@ -91,7 +91,7 @@ function bundle end
 """
     similarity
 
-Compute the similarity between two vectors. Usually, when 
+Compute the similarity between two vectors. Usually, when
 ``\\operatorname{sim}(x, y) > \\theta_D``, with ``\\theta_D`` being
 some threshold value, then ``x`` is judged to be nearly equal to ``y``.
 """
@@ -103,6 +103,72 @@ function similarity end
 One place permutation of a vector symbol to produce a dissimilar vector symbol.
 """
 function permute end
+
+#= Vector Utilities =#
+
+"""
+    circular_convolution(x::AbstractVector{<:Real}, y::AbstractVector{<:Real})
+
+The circular convolution of two vectors.
+
+### Inputs
+
+- `x, y` -- Two vectors of the same size.
+
+### Outputs
+
+The circular convolution of two vectors.
+
+### Throws
+
+Throws `DimensionMismatch` when `x` and `y` have different lengths.
+"""
+function circular_convolution(x::AbstractVector{<:Real}, y::AbstractVector{<:Real})::Vector{<:AbstractFloat}
+    length(x) == length(y) || throw(DimensionMismatch("vectors must have the same length"))
+    irfft(rfft(x) .* rfft(y), length(x))
+end
+
+"""
+    circular_correlation(x::AbstractVector{<:Real}, y::AbstractVector{<:Real})
+
+The circular correlation of two vectors.
+
+### Inputs
+
+- `x, y` -- Two vectors of the same size.
+
+### Outputs
+
+The circular correlation of two vectors.
+
+### Throws
+
+Throws `DimensionMismatch` when `x` and `y` have different lengths.
+"""
+function circular_correlation(x::AbstractVector{<:Real}, y::AbstractVector{<:Real})::Vector{<:AbstractFloat}
+    length(x) == length(y) || throw(DimensionMismatch("vectors must have the same length"))
+    irfft(rfft(x) .* conj.(rfft(y)), length(x))
+end
+
+"""
+    involution(x::AbstractVector)::Vector
+
+### Inputs
+
+- `x`: Vector to involute
+
+
+### Outputs
+
+Involuted vector
+
+### Throws
+
+Throws `BoundsError` when `x` is empty.
+"""
+function involution(x::AbstractVector)::Vector
+    x[[1; length(x):-1:2]]
+end
 
 #= HRRs =#
 
@@ -161,48 +227,33 @@ function HRR(dist::Sampleable, size::Int)::HRR
 end
 
 """
-    circular_convolution(x::AbstractVector{<:Real}, y::AbstractVector{<:Real})
+    normal([rng::AbstractRNG,] size::Int)::HRR
 
-The circular convolution of two vectors.
-
-### Inputs
-
-- `x, y` -- Two vectors of the same size.
-
-### Outputs
-
-The circular convolution of two vectors.
-
-### Throws
-
-Throws `DimensionMismatch` when `x` and `y` have different lengths.
+Sample a new vector from the ``\\mathcal{N}(0, \\frac{1}{\\sqrt{D}})``.
 """
-function circular_convolution(x::AbstractVector{<:Real}, y::AbstractVector{<:Real})::Vector{<:AbstractFloat}
-    length(x) == length(y) || throw(DimensionMismatch("vectors must have the same length"))
-    irfft(rfft(x) .* rfft(y), length(x))
+function normal(rng::AbstractRNG, size::Int)::HRR
+    dist = Normal(0, 1 / sqrt(size))
+    HRR(rng, dist, size)
 end
 
-"""
-    circular_correlation(x::AbstractVector{<:Real}, y::AbstractVector{<:Real})
-
-The circular correlation of two vectors.
-
-### Inputs
-
-- `x, y` -- Two vectors of the same size.
-
-### Outputs
-
-The circular correlation of two vectors.
-
-### Throws
-
-Throws `DimensionMismatch` when `x` and `y` have different lengths.
-"""
-function circular_correlation(x::AbstractVector{<:Real}, y::AbstractVector{<:Real})::Vector{<:AbstractFloat}
-    length(x) == length(y) || throw(DimensionMismatch("vectors must have the same length"))
-    irfft(rfft(x) .* conj.(rfft(y)), length(x))
+function normal(size::Int)::HRR
+    dist = Normal(0, 1 / sqrt(size))
+    HRR(dist, size)
 end
+
+function Base.length(x::HRR)::Int
+    return length(x.data)
+end
+
+function Base.:(==)(x::HRR, y::HRR)::Bool
+    x.data == y.data
+end
+
+function Base.show(io::IO, x::HRR)
+    print(io, typeof(x), "(dim=", length(x), ")")
+end
+
+#= HRR Binding =#
 
 """
     bind(x::HRR, y:HRR)
@@ -237,6 +288,10 @@ true
 """
 function bind(x::HRR, y::HRR)::HRR
     HRR(circular_convolution(x.data, y.data))
+end
+
+function bind(xs::AbstractVector{<:HRR})::HRR
+    reduce(⊗, xs)
 end
 
 """
@@ -274,6 +329,12 @@ function unbind(x::HRR, y::HRR)::HRR
     HRR(circular_correlation(x.data, y.data))
 end
 
+function unbind(xs::AbstractVector{<:HRR})::HRR
+    reduce(⨸, xs)
+end
+
+#= HRR Bundling =#
+
 """
     bundle(x::HRR, y::HRR)::HRR
 
@@ -308,6 +369,10 @@ true
 function bundle(x::HRR, y::HRR)::HRR
     length(x) == length(y) || throw(DimensionMismatch("vectors must have the same length"))
     HRR(x.data .+ y.data)
+end
+
+function bundle(xs::AbstractVector{<:HRR})::HRR
+    reduce(⊕, xs)
 end
 
 """
@@ -346,33 +411,7 @@ function unbundle(x::HRR, y::HRR)::HRR
     HRR(x.data .- y.data)
 end
 
-"""
-    involution(x::AbstractVector)::Vector
-
-### Inputs
-
-- `x`: Vector to involute
-
-
-### Outputs
-
-Involuted vector
-
-### Throws
-
-Throws `BoundsError` when `x` is empty.
-"""
-function involution(x::AbstractVector)::Vector
-    x[[1; length(x):-1:2]]
-end
-
-function Base.length(x::HRR)::Int
-    return length(x.data)
-end
-
-function Base.show(io::IO, x::HRR)
-    print(io, typeof(x), "(dim=", length(x), ")")
-end
+#= HRR Permutation =#
 
 """
     permute(x::HRR, k::Integer=1)::HRR
@@ -410,6 +449,8 @@ a vector is the additive inverse of the one used for permuting.
 function unpermute(x::HRR, k::Integer=-1)::HRR
     HRR(circshift(x.data, k))
 end
+
+#= HRR Similarity =#
 
 """
     similarity(x::HRR, y::HRR)::Real
@@ -456,32 +497,11 @@ function similarity(x::HRR, y::HRR)::Real
     dot(x.data, y.data) / norms
 end
 
-"""
-    normal([rng::AbstractRNG,] size::Int)::HRR
-
-Sample a new vector from the ``\\mathcal{N}(0, \\frac{1}{\\sqrt{D}})``.
-"""
-function normal(rng::AbstractRNG, size::Int)::HRR
-    dist = Normal(0, 1 / sqrt(size))
-    HRR(rng, dist, size)
-end
-
-function normal(size::Int)::HRR
-    dist = Normal(0, 1 / sqrt(size))
-    HRR(dist, size)
-end
-
-function Base.:(==)(x::HRR, y::HRR)::Bool
-    x.data == y.data
-end
-
-
 #= Constants =#
 
 const ⊗ = bind
 const ⨸ = unbind
 const ⊕ = bundle
 const ⊖ = unbundle
-
 
 end # module VSAs
