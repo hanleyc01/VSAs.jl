@@ -1,0 +1,7 @@
+[deps]
+Distributions = "31c24e10-a181-5473-b8eb-7969acd0382f"
+Documenter = "e30172f5-a6a5-5a46-863b-614d45cd2de4"
+VSAs = "6d48fee3-8606-4884-a232-dd5b86e1352d"
+
+[sources]
+VSAs = {path = ".."}
