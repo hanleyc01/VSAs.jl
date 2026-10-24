@@ -519,7 +519,7 @@ end
 #= Cleanup Memory =#
 
 """
-    simplecleanup(x::T, codebook::AbstractVector{T})::Vector{T} where {T<:AbstractVSA}
+    simplecleanup(x::T, codebook::AbstractVector{T})::Vector{T} where {T<:Real}
 
 Simple cleanup memory
 
