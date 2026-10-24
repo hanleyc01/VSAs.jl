@@ -5,7 +5,7 @@ using Random
 using FFTW
 using LinearAlgebra
 
-export AbstractVSA, HRR, circular_convolution, circular_correlation, ⊗, ⨸, ⊕, ⊖, similarity, permute, normal, unpermute
+export AbstractVSA, HRR, circular_convolution, circular_correlation, ⊗, ⨸, ⊕, ⊖, similarity, permute, normal, unpermute, unitary
 public bind, unbind, bundle, unbundle
 
 #= Abstract Supertype =#
@@ -495,6 +495,25 @@ function similarity(x::HRR, y::HRR)::Real
 
     norms = norm(x.data) * norm(y.data) + 1.1e-8
     dot(x.data, y.data) / norms
+end
+
+#= Unitary Vectors =#
+
+"""
+    unitary([rng::AbstractRNG,] size::Integer)::HRR
+
+Sample a unitary HRR vector, which makes the circular correlation exact.
+"""
+function unitary(rng::AbstractRNG, size::Integer)::HRR
+    dist = Normal(0, 1)
+    spectrum = rfft(rand(rng, dist, size))
+    HRR(irfft(spectrum ./ abs(spectrum), size))
+end
+
+function unitary(size::Integer)::HRR
+    dist = Normal(0, 1)
+    spectrum = rfft(rand(dist, size))
+    HRR(irfft(spectrum ./ abs(spectrum), size))
 end
 
 #= Cleanup Memory =#
