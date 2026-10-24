@@ -5,7 +5,7 @@ using Random
 using FFTW
 using LinearAlgebra
 
-export AbstractVSA, HRR, circular_convolution, circular_correlation, ⊗, ⨸, ⊕, ⊖, similarity, permute, normal, unpermute, unitary
+export AbstractVSA, HRR, circular_convolution, circular_correlation, ⊗, ⨸, ⊕, ⊖, similarity, permute, normal, unpermute, unitary, simplecleanup
 public bind, unbind, bundle, unbundle
 
 #= Abstract Supertype =#
