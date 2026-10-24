@@ -519,7 +519,7 @@ end
 #= Cleanup Memory =#
 
 """
-    simplecleanup{T<:AbstractVSA}(x::T, codebook::AbstractVector{T})::Vector{T}
+    simplecleanup(x::T, codebook::AbstractVector{T})::Vector{T} where {T<:AbstractVSA}
 
 Simple cleanup memory
 
@@ -537,7 +537,7 @@ Returns the list of similarities between `x` and the codebook values.
 
 The simplest way to retrieve the value is via [`argmax`](@ref argmax).
 """
-function simplecleanup{T<:AbstractVSA}(x::T, codebook::AbstractVector{T})::Vector{Real}
+function simplecleanup(x::T, codebook::AbstractVector{T})::Vector{Real} where {T<:AbstractVSA}
     sims = map(y -> similarity(x, y), codebook)
     sims
 end
