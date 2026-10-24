@@ -329,7 +329,7 @@ function unbind(x::HRR, y::HRR)::HRR
     HRR(circular_correlation(x.data, y.data))
 end
 
-function unbind(xs::AbstractVector{<:HRR})::HRR
+function unbind(xs::AbstractVector{<:AbstractVSA})::AbstractVSA
     reduce(⨸, xs)
 end
 
@@ -371,7 +371,7 @@ function bundle(x::HRR, y::HRR)::HRR
     HRR(x.data .+ y.data)
 end
 
-function bundle(xs::AbstractVector{<:HRR})::HRR
+function bundle(xs::AbstractVector{<:AbstractVSA})::AbstractVSA
     reduce(⊕, xs)
 end
 
@@ -495,6 +495,32 @@ function similarity(x::HRR, y::HRR)::Real
 
     norms = norm(x.data) * norm(y.data) + 1.1e-8
     dot(x.data, y.data) / norms
+end
+
+#= Cleanup Memory =#
+
+"""
+    simplecleanup{T<:AbstractVSA}(x::T, codebook::AbstractVector{T})::Vector{T}
+
+Simple cleanup memory
+
+### Inputs
+
+- `x` -- A VSA vector symbol
+- `codebook` -- A list of vector symbols to function as a codebook
+
+
+### Output
+
+Returns the list of similarities between `x` and the codebook values.
+
+### Notes
+
+The simplest way to retrieve the value is via [`argmax`](@ref argmax).
+"""
+function simplecleanup{T<:AbstractVSA}(x::T, codebook::AbstractVector{T})::Vector{Real}
+    sims = map(y -> similarity(x, y), codebook)
+    sims
 end
 
 #= Constants =#
